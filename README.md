@@ -62,19 +62,6 @@ RESPONDS
 
 
 ![Build](Add photos of build process here)
- The cordova build command is used to compile and package your Cordova project for different platforms (Android, iOS, etc.). It processes the app's code, applies platform-specific settings, and generates the final installable files (like .apk for Android or .ipa for iOS).
-
-Usage
-sh
-Copy
-Edit
-cordova build <platform>
-Example for Android:
-
-sh
-Copy
-Edit
-cordova build android
 Key Features of cordova build
 Compiles Code: Converts your HTML, CSS, and JavaScript into a platform-specific app.
 Handles Dependencies: Ensures plugins, permissions, and configurations are applied.
@@ -84,11 +71,10 @@ Debug: Used for development (cordova build android)
 Release: Used for publishing (cordova build android --release)
 
 
-
 ## Team Contributions
-- [Ardra Ps]: [App Developer]
-- [Midhuna M Das]: [Desigining]
-- [Ardra Sunil]: [Idea Generator]
+-  [Ardra Ps]: [App Developer]
+-  [Midhuna M Das]: [Desigining ]
+-  [Ardra Sunil]: [Idea Generator]
 
 ---
 Made with ❤ at TinkerHub
