@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student & Professional Support</title>
+    <style>
+        /* Reset Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styles */
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background: #e8e8e8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        /* Container */
+        .container {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        /* Hidden elements */
+        .hidden { 
+            display: none; 
+        }
+
+        /* Header */
+        h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #007bff;
+        }
+
+        /* Input Fields */
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 12px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            background-color: #f9f9f9;
+            outline: none;
+        }
+        
+        input:focus {
+            border-color: #007bff;
+            background-color: #fff;
+        }
+
+        /* Button */
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:active {
+            background-color: #004080;
+        }
+
+        /* Options Buttons */
+        button.option-btn {
+            width: 48%;
+            padding: 12px;
+            margin: 5px 1%;
+            background-color: #f3f3f3;
+            color: #007bff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        button.option-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* Loader */
+        .loader {
+            text-align: center;
+            display: none;
+            font-size: 16px;
+            color: #007bff;
+            margin-top: 15px;
+        }
+
+        /* Suggestion Section */
+        #suggestions {
+            text-align: center;
+        }
+
+        #suggestionText {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+            font-weight: 500;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loginForm">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username" required><br>
+            <input type="email" id="email" placeholder="Email" required><br>
+            <input type="password" id="password" placeholder="Password" required><br>
+            <button onclick="saveLogin()">Login</button>
+        </div>
+        
+        <div id="questionnaire" class="hidden">
+            <h2 id="questionTitle"></h2>
+            <input type="text" id="answer" placeholder="Your answer here..." required>
+            <div id="options"></div>
+            <br>
+            <button onclick="prevQuestion()">Back</button>
+            <button onclick="nextQuestion()">Next</button>
+        </div>
+
+        <div id="suggestions" class="hidden">
+            <h2>AI Suggestions</h2>
+            <p id="suggestionText"></p>
+            <div class="loader" id="loading">Loading suggestions...</div>
+        </div>
+    </div>
+
+    <script>
+        const GEMINI_API_KEY = "AIzaSyAOtFQhtalNWEdkErsTxOF2KAS6-I7pj5k";  // Keep this secure in a backend!
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+
+        const questions = [
+            { q: "What is your school/college/university?", type: "text" },
+            { q: "Year of passing?", type: "text" },
+            { q: "Percentage/Grade?", type: "text" },
+            { q: "Subjects studied?", type: "text" },
+            { q: "Extracurricular activities?", type: "text" },
+            { q: "How do you prefer to learn?", type: "options", options: ["Video Lecture", "Text Lecture", "Interactive Lecture"] },
+            { q: "Do you prefer live or recorded content?", type: "options", options: ["Live Session", "Recorded Content"] },
+            { q: "How do you plan to apply what you learn?", type: "options", options: ["Career Development", "Academic Improvement"] },
+            { q: "Do you have any previous experience with this subject?", type: "text" },
+            { q: "Do you face any challenges when learning online?", type: "options", options: ["Technical Issues", "Difficulty Understanding"] },
+            { q: "Would you like additional support?", type: "options", options: ["Yes", "No"] },
+            { q: "Are you comfortable learning in English?", type: "options", options: ["Yes", "No"] }
+        ];
+
+        let currentQuestion = 0;
+        let responses = {};
+
+        function saveLogin() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            localStorage.setItem('username', username);
+            localStorage.setItem('email', email);
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('questionnaire').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const question = questions[currentQuestion];
+            document.getElementById('questionTitle').innerText = question.q;
+            const answerField = document.getElementById('answer');
+            const optionsDiv = document.getElementById('options');
+            answerField.style.display = question.type === "text" ? "block" : "none";
+            optionsDiv.innerHTML = "";
+            
+            if (question.type === "options") {
+                question.options.forEach(option => {
+                    let btn = document.createElement('button');
+                    btn.innerText = option;
+                    btn.classList.add('option-btn');
+                    btn.onclick = () => { responses[currentQuestion] = option; nextQuestion(); };
+                    optionsDiv.appendChild(btn);
+                });
+            }
+        }
+
+        function nextQuestion() {
+            const question = questions[currentQuestion];
+            if (question.type === "text") {
+                responses[currentQuestion] = document.getElementById('answer').value;
+            }
+            
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+            } else {
+                submitResponses();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion();
+            }
+        }
+
+        function submitResponses() {
+            localStorage.setItem('responses', JSON.stringify(responses));
+            document.getElementById('questionnaire').classList.add('hidden');
+            document.getElementById('suggestions').classList.remove('hidden');
+            document.getElementById('loading').style.display = "block";
+
+            getSuggestions();
+        }
+
+        async function getSuggestions() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Based on this data: ${JSON.stringify(responses)}, suggest learning improvements.` }] } ]
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('loading').style.display = "none";
+
+                if (data && data.candidates) {
+                    document.getElementById('suggestionText').innerText = data.candidates[0].content.parts[0].text;
+                } else {
+                    document.getElementById('suggestionText').innerText = "No suggestion available.";
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = "none";
+                document.getElementById('suggestionText').innerText = "Error fetching suggestions.";
+            }
+        }
+    </script>
+</body>
+</html>
